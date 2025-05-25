@@ -91,7 +91,7 @@ export default function SearchResults() {
 
       try {
         // This call remains the same, fetching from your backend
-        const response = await fetch(`http://localhost:4000/api/bricklink/set/${query}`);
+        const response = await fetch(`https://zerotebrick-backend.onrender.com/api/bricklink/set/${query}`);
 
         if (!response.ok) {
           const errorData = await response.json();

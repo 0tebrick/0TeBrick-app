@@ -117,7 +117,7 @@ export default function SetDetail() {
 
       try {
         // Fetch the specific set's data from your backend using the setID
-        const response = await fetch(`http://localhost:4000/api/bricklink/set/${setID}`);
+        const response = await fetch(`https://zerotebrick-backend.onrender.com/api/bricklink/set/${setID}`);
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -179,7 +179,7 @@ export default function SetDetail() {
 
     try {
       // Send the newSetData to your backend for saving to SQLite
-      const response = await fetch('http://localhost:4000/api/collection', {
+      const response = await fetch('https://zerotebrick-backend.onrender.com/api/collection', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
