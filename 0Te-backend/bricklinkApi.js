@@ -108,11 +108,9 @@ const oauth = OAuth({
 export async function getSetInfo(rawSetNumber) {
     const potentialSetNumbers = [
         rawSetNumber,
-        `${rawSetNumber}-1`, // Intentar con el sufijo -1
-        // Puedes añadir más sufijos aquí si es necesario
+        `${rawSetNumber}-1`,
     ].filter(s => s && s.trim() !== '');
 
-    // Recorre cada formato de número de set (ej. "70335", "70335-1")
     for (let currentSetNumberIndex = 0; currentSetNumberIndex < potentialSetNumbers.length; currentSetNumberIndex++) {
         const currentSetNumber = potentialSetNumbers[currentSetNumberIndex];
         if (!currentSetNumber) continue;
@@ -126,7 +124,6 @@ export async function getSetInfo(rawSetNumber) {
             data: null
         };
 
-        // Recorre cada conjunto de credenciales (para las diferentes IPs estáticas)
         for (let i = 0; i < BRICKLINK_CREDENTIALS.length; i++) {
             const { token, tokenSecret } = BRICKLINK_CREDENTIALS[i];
             
@@ -150,10 +147,9 @@ export async function getSetInfo(rawSetNumber) {
                 if (response.status === 200) {
                     console.log("Bricklink API: Éxito con setNumber:", currentSetNumber);
                     if (response.data && response.data.data) {
-                        return response.data.data; // ¡Éxito! Devuelve los datos
+                        return response.data.data;
                     } else {
                         console.warn("Bricklink API: Respuesta 200 pero sin 'data' esperada para setNumber:", currentSetNumber);
-                        // Si no hay datos, es un fallo "lógico", salimos del bucle de IPs y probamos el siguiente formato de setNumber
                         break; // Salir del bucle interno (de IPs) e ir al siguiente potentialSetNumber
                     }
                 }
@@ -164,46 +160,45 @@ export async function getSetInfo(rawSetNumber) {
                 console.error(`Intento ${i+1} con ${currentSetNumber} (Token: ${token}) falló: ${statusCode} - ${errorMessage}`);
 
                 // Si es TOKEN_IP_MISMATCHED, intentar con el siguiente token de IP.
-                // Si es el último token Y no quedan más formatos de setNumber, entonces sí lanzamos el error.
                 if (statusCode === 401 && errorMessage.includes('TOKEN_IP_MISMATCHED')) {
-                    if (i === BRICKLINK_CREDENTIALS.length - 1) { // Si es el último token
-                        // No podemos hacer más reintentos de IP. Verificamos si hay más formatos de setNumber.
+                    if (i === BRICKLINK_CREDENTIALS.length - 1) { 
+                        // Último token de IP. Si hay más formatos de setNumber, intentamos el siguiente formato.
                         if (currentSetNumberIndex < potentialSetNumbers.length - 1) {
-                            break; // Salir del bucle de IP para probar el siguiente formato de setNumber
+                            break; // Sale del bucle interno de IPs para que el bucle externo pruebe el siguiente formato.
                         } else {
-                            // Último token y último formato, no hay más opciones, lanzar el error
+                            // Último token y último formato de setNumber, entonces sí lanzamos el error.
                             const bricklinkError = new Error(errorMessage || `Error final: TOKEN_IP_MISMATCHED para ${currentSetNumber}.`);
                             bricklinkError.statusCode = statusCode;
                             bricklinkError.bricklinkDetails = error.response?.data;
                             throw bricklinkError;
                         }
                     }
-                    continue; // Intentar el siguiente token de IP para el mismo currentSetNumber
+                    continue; // Pasa al siguiente token de IP para el mismo currentSetNumber
                 }
 
-                // Si el error es un "parámetro inválido" o "no encontrado" (400 o 404),
-                // y NO es el último formato de setNumber, salimos del bucle de IPs
-                // para que el bucle externo (de setNumbers) pueda probar el siguiente formato.
+                // Si el error es "parámetro inválido" o "no encontrado" (400 o 404).
                 if ((statusCode === 400 && errorMessage.includes('PARAMETER_MISSING_OR_INVALID')) || statusCode === 404) {
+                    // Si NO es el último formato de setNumber, entonces salimos del bucle de IPs para probar el siguiente formato.
                     if (currentSetNumberIndex < potentialSetNumbers.length - 1) {
-                        break; // Salir del bucle de IPs e ir al siguiente potentialSetNumber
+                        break; // Salir del bucle de IPs para que el bucle externo pruebe el siguiente setNumber.
                     }
-                    // Si es el último formato de setNumber y falla aquí, entonces sí lanzamos el error.
+                    // Si es el último formato de setNumber y falla aquí, significa que ya no hay más opciones,
+                    // por lo que el error se lanzará en la siguiente línea después de este 'if'.
                 }
                 
-                // Si llegamos aquí, es un error que no podemos recuperar
+                // Si llegamos aquí, es un error no recuperable (no de IP, no de formato)
                 // O es el último intento (último token, último formato) y falló.
                 const bricklinkError = new Error(errorMessage || `Error al obtener información de BrickLink para ${currentSetNumber}.`);
                 bricklinkError.statusCode = statusCode;
                 bricklinkError.bricklinkDetails = error.response?.data;
-                throw bricklinkError;
+                throw bricklinkError; // Este throw ahora solo se ejecuta si no hay más intentos posibles.
             }
         }
     }
 
     // Si la ejecución llega aquí, significa que todos los intentos (todos los setNumbers, todos los tokens) fallaron.
     const finalError = new Error(`No se pudo encontrar el set "${rawSetNumber}" en BrickLink después de todos los intentos.`);
-    finalError.statusCode = 404; // Asumimos 404 si no se encuentra
+    finalError.statusCode = 404;
     throw finalError;
 }
 
