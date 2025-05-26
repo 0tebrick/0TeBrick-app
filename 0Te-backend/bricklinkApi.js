@@ -106,15 +106,15 @@ const oauth = OAuth({
 // ... (resto de tu código hasta la función getSetInfo)
 
 export async function getSetInfo(rawSetNumber) {
-    // Definimos los números de set que vamos a intentar, comenzando con el original
     const potentialSetNumbers = [
         rawSetNumber,
         `${rawSetNumber}-1`, // Intentar con el sufijo -1
-        // Si hay otros sufijos comunes (-2, etc.) para sets problemáticos, podrías añadirlos aquí
-        // Por ejemplo: `${rawSetNumber}-2`,
-    ].filter(s => s && s.trim() !== ''); // Asegurarnos de que no haya entradas vacías
+        // Puedes añadir más sufijos aquí si es necesario
+    ].filter(s => s && s.trim() !== '');
 
-    for (const currentSetNumber of potentialSetNumbers) {
+    // Recorre cada formato de número de set (ej. "70335", "70335-1")
+    for (let currentSetNumberIndex = 0; currentSetNumberIndex < potentialSetNumbers.length; currentSetNumberIndex++) {
+        const currentSetNumber = potentialSetNumbers[currentSetNumberIndex];
         if (!currentSetNumber) continue;
 
         console.log(`getSetInfo: Intentando buscar con número de set: "${currentSetNumber}"`);
@@ -126,7 +126,7 @@ export async function getSetInfo(rawSetNumber) {
             data: null
         };
 
-        // Iterar a través de las credenciales de OAuth (para el problema de la IP)
+        // Recorre cada conjunto de credenciales (para las diferentes IPs estáticas)
         for (let i = 0; i < BRICKLINK_CREDENTIALS.length; i++) {
             const { token, tokenSecret } = BRICKLINK_CREDENTIALS[i];
             
@@ -150,38 +150,49 @@ export async function getSetInfo(rawSetNumber) {
                 if (response.status === 200) {
                     console.log("Bricklink API: Éxito con setNumber:", currentSetNumber);
                     if (response.data && response.data.data) {
-                        return response.data.data; // ¡Devuelve los datos si la respuesta es exitosa!
+                        return response.data.data; // ¡Éxito! Devuelve los datos
                     } else {
                         console.warn("Bricklink API: Respuesta 200 pero sin 'data' esperada para setNumber:", currentSetNumber);
-                        // No lanzamos error aquí, continuamos al siguiente intento (si hay más tokens/setNumbers)
+                        // Si no hay datos, es un fallo "lógico", salimos del bucle de IPs y probamos el siguiente formato de setNumber
+                        break; // Salir del bucle interno (de IPs) e ir al siguiente potentialSetNumber
                     }
                 }
             } catch (error) {
                 const errorMessage = error.response?.data?.meta?.description || error.response?.data?.message || '';
                 const statusCode = error.response?.status;
 
-                console.error(`Intento ${i+1} con ${currentSetNumber} falló: ${statusCode} - ${errorMessage}`);
+                console.error(`Intento ${i+1} con ${currentSetNumber} (Token: ${token}) falló: ${statusCode} - ${errorMessage}`);
 
-                // Si es TOKEN_IP_MISMATCHED, intentar con el siguiente token de IP
+                // Si es TOKEN_IP_MISMATCHED, intentar con el siguiente token de IP.
+                // Si es el último token Y no quedan más formatos de setNumber, entonces sí lanzamos el error.
                 if (statusCode === 401 && errorMessage.includes('TOKEN_IP_MISMATCHED')) {
-                    // Si este es el último token y hay más potentialSetNumbers, entonces el `break` debería salir del bucle interno
-                    if (i === BRICKLINK_CREDENTIALS.length - 1 && potentialSetNumbers.indexOf(currentSetNumber) < potentialSetNumbers.length - 1) {
-                        break; // Salir del bucle de IPs e intentar el siguiente formato de setNumber
+                    if (i === BRICKLINK_CREDENTIALS.length - 1) { // Si es el último token
+                        // No podemos hacer más reintentos de IP. Verificamos si hay más formatos de setNumber.
+                        if (currentSetNumberIndex < potentialSetNumbers.length - 1) {
+                            break; // Salir del bucle de IP para probar el siguiente formato de setNumber
+                        } else {
+                            // Último token y último formato, no hay más opciones, lanzar el error
+                            const bricklinkError = new Error(errorMessage || `Error final: TOKEN_IP_MISMATCHED para ${currentSetNumber}.`);
+                            bricklinkError.statusCode = statusCode;
+                            bricklinkError.bricklinkDetails = error.response?.data;
+                            throw bricklinkError;
+                        }
                     }
-                    continue; // Pasa al siguiente par de credenciales de IP
+                    continue; // Intentar el siguiente token de IP para el mismo currentSetNumber
                 }
 
-                // Si el error es un "parámetro inválido" o "no encontrado" y no es el último formato de setNumber,
-                // salimos del bucle de credenciales de IP y probamos el siguiente formato de setNumber.
+                // Si el error es un "parámetro inválido" o "no encontrado" (400 o 404),
+                // y NO es el último formato de setNumber, salimos del bucle de IPs
+                // para que el bucle externo (de setNumbers) pueda probar el siguiente formato.
                 if ((statusCode === 400 && errorMessage.includes('PARAMETER_MISSING_OR_INVALID')) || statusCode === 404) {
-                    // Solo intentar el siguiente setNumber si no estamos en el último
-                    if (potentialSetNumbers.indexOf(currentSetNumber) < potentialSetNumbers.length - 1) {
-                         break; // Salir del bucle de IPs y pasar al siguiente formato de setNumber
+                    if (currentSetNumberIndex < potentialSetNumbers.length - 1) {
+                        break; // Salir del bucle de IPs e ir al siguiente potentialSetNumber
                     }
+                    // Si es el último formato de setNumber y falla aquí, entonces sí lanzamos el error.
                 }
                 
-                // Si llegamos aquí, es un error que no podemos recuperar, o el último intento falló.
-                // Re-lanzar el error para que el server.js lo maneje.
+                // Si llegamos aquí, es un error que no podemos recuperar
+                // O es el último intento (último token, último formato) y falló.
                 const bricklinkError = new Error(errorMessage || `Error al obtener información de BrickLink para ${currentSetNumber}.`);
                 bricklinkError.statusCode = statusCode;
                 bricklinkError.bricklinkDetails = error.response?.data;
@@ -190,11 +201,12 @@ export async function getSetInfo(rawSetNumber) {
         }
     }
 
-    // Si todos los intentos fallan para todos los formatos y tokens, lanza un error 404 general
-    const finalError = new Error(`No se pudo encontrar el set "${rawSetNumber}" en BrickLink con los formatos intentados.`);
-    finalError.statusCode = 404; // 404 si no se encuentra después de todos los intentos
+    // Si la ejecución llega aquí, significa que todos los intentos (todos los setNumbers, todos los tokens) fallaron.
+    const finalError = new Error(`No se pudo encontrar el set "${rawSetNumber}" en BrickLink después de todos los intentos.`);
+    finalError.statusCode = 404; // Asumimos 404 si no se encuentra
     throw finalError;
 }
+
 // Función para obtener la información del set
 /*export async function getSetInfo(setNumber) {
     const url = `https://api.bricklink.com/api/store/v1/items/SET/${setNumber}`;
