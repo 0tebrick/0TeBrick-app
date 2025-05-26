@@ -104,7 +104,7 @@ const oauth = OAuth({
 
 // Función para obtener la información del set
 export async function getSetInfo(setNumber) {
-    const url = `https://api.bricklink.com/api/store/v1/sets/${setNumber}`;
+    const url = `https://api.bricklink.com/api/store/v1/items/SET/${setNumber}`;
 
     for (let i = 0; i < BRICKLINK_CREDENTIALS.length; i++) {
         const { token, tokenSecret } = BRICKLINK_CREDENTIALS[i];
