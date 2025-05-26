@@ -70,22 +70,22 @@ import 'dotenv/config'; // Para asegurar que dotenv.config() se ejecuta
 // Adaptar según cómo las nombres (ej. BRICKLINK_TOKEN_1, BRICKLINK_SECRET_1)
 const BRICKLINK_CREDENTIALS = [
   {
-    consumerKey: process.env.BRICKLINK_CONSUMER_KEY, // Asumo que Consumer Key/Secret son los mismos
-    consumerSecret: process.env.BRICKLINK_CONSUMER_SECRET,
-    token: process.env.BRICKLINK_TOKEN_1, // Token para IP_1
-    tokenSecret: process.env.BRICKLINK_SECRET_1, // Secret para IP_1
+    consumerKey: process.env.CONSUMER_KEY, // Asumo que Consumer Key/Secret son los mismos
+    consumerSecret: process.env.CONSUMER_SECRET,
+    token: process.env.TOKEN_1, // Token para IP_1
+    tokenSecret: process.env.TOKEN_SECRET_1, // Secret para IP_1
   },
   {
-    consumerKey: process.env.BRICKLINK_CONSUMER_KEY,
-    consumerSecret: process.env.BRICKLINK_CONSUMER_SECRET,
-    token: process.env.BRICKLINK_TOKEN_2, // Token para IP_2
-    tokenSecret: process.env.BRICKLINK_SECRET_2, // Secret para IP_2
+    consumerKey: process.env.CONSUMER_KEY,
+    consumerSecret: process.env.CONSUMER_SECRET,
+    token: process.env.TOKEN_2, // Token para IP_2
+    tokenSecret: process.env.TOKEN_SECRET_2, // Secret para IP_2
   },
   {
-    consumerKey: process.env.BRICKLINK_CONSUMER_KEY,
-    consumerSecret: process.env.BRICKLINK_CONSUMER_SECRET,
-    token: process.env.BRICKLINK_TOKEN_3, // Token para IP_3
-    tokenSecret: process.env.BRICKLINK_SECRET_3, // Secret para IP_3
+    consumerKey: process.env.CONSUMER_KEY,
+    consumerSecret: process.env.CONSUMER_SECRET,
+    token: process.env.TOKEN_3, // Token para IP_3
+    tokenSecret: process.env.TOKEN_SECRET_3, // Secret para IP_3
   },
   // Agrega más si Render te da más de 3 IPs estáticas
 ];
