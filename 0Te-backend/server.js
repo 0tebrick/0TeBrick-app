@@ -161,7 +161,11 @@ app.get("/api/bricklink/set/:setNumber", async (req, res) => { // ¡Añadido /ap
   const setNumber = req.params.setNumber;
 
   try {
+    console.log(`Backend: Buscando información del set para número base: ${setNumber}`);
     const setInfo = await getSetInfo(setNumber); // Ahora getSetInfo lanza errores específicos
+    // --- AÑADE ESTO ---
+  console.log("Backend: Datos a enviar al frontend:", setInfo);
+  // --- FIN AÑADE ESTO ---
     res.json(setInfo); // Si todo va bien, setInfo ya es la data.data de BrickLink
   } catch (error) {
     console.error("Error en el endpoint /api/bricklink/set:", error); // Loguea el error completo

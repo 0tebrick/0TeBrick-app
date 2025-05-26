@@ -126,6 +126,10 @@ export async function getSetInfo(setNumber) {
                 headers: oauth.toHeader(authorization),
             });
 
+              // --- AÑADE ESTO ---
+             console.log("Bricklink API: Respuesta exitosa recibida:", response.data);
+              // --- FIN AÑADE ESTO ---
+
             // Si la respuesta es exitosa, devolvemos los datos
             if (response.status === 200) {
                 return response.data.data; // Asumo que los datos están en response.data.data
