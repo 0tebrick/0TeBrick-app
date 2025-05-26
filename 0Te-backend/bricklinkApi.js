@@ -102,19 +102,20 @@ const oauth = OAuth({
   },
 });
 
+// En 0Te-backend/bricklinkApi.js
+// ... (resto de tu código hasta la función getSetInfo)
+
 export async function getSetInfo(rawSetNumber) {
-    // --- Lógica de intentos ---
-    // Intentamos el número tal cual
-    // Si falla y es un 404/PARAMETER_MISSING, intentamos con -1
+    // Definimos los números de set que vamos a intentar, comenzando con el original
     const potentialSetNumbers = [
         rawSetNumber,
-        `${rawSetNumber}-1`,
-        // Puedes añadir más sufijos si lo consideras necesario para tu caso de uso
-        // `${rawSetNumber}-2`,
-    ].filter(s => s && s.trim() !== ''); // Asegurarse de que no sean vacíos
+        `${rawSetNumber}-1`, // Intentar con el sufijo -1
+        // Si hay otros sufijos comunes (-2, etc.) para sets problemáticos, podrías añadirlos aquí
+        // Por ejemplo: `${rawSetNumber}-2`,
+    ].filter(s => s && s.trim() !== ''); // Asegurarnos de que no haya entradas vacías
 
     for (const currentSetNumber of potentialSetNumbers) {
-        if (!currentSetNumber) continue; // Salta si es nulo o indefinido
+        if (!currentSetNumber) continue;
 
         console.log(`getSetInfo: Intentando buscar con número de set: "${currentSetNumber}"`);
 
@@ -129,7 +130,6 @@ export async function getSetInfo(rawSetNumber) {
         for (let i = 0; i < BRICKLINK_CREDENTIALS.length; i++) {
             const { token, tokenSecret } = BRICKLINK_CREDENTIALS[i];
             
-            // Asegúrate de que las credenciales para este intento son válidas
             if (!token || !tokenSecret) {
                 console.warn(`Saltando intento con credenciales incompletas para el intento de IP ${i+1}.`);
                 continue;
@@ -150,10 +150,10 @@ export async function getSetInfo(rawSetNumber) {
                 if (response.status === 200) {
                     console.log("Bricklink API: Éxito con setNumber:", currentSetNumber);
                     if (response.data && response.data.data) {
-                        return response.data.data; // Devuelve los datos si la respuesta es exitosa
+                        return response.data.data; // ¡Devuelve los datos si la respuesta es exitosa!
                     } else {
-                        console.warn("Bricklink API: Respuesta 200 pero sin 'data' esperada. Intentando el siguiente.");
-                        // No lanzamos error aquí, intentamos el siguiente token/setNumber
+                        console.warn("Bricklink API: Respuesta 200 pero sin 'data' esperada para setNumber:", currentSetNumber);
+                        // No lanzamos error aquí, continuamos al siguiente intento (si hay más tokens/setNumbers)
                     }
                 }
             } catch (error) {
@@ -163,19 +163,26 @@ export async function getSetInfo(rawSetNumber) {
                 console.error(`Intento ${i+1} con ${currentSetNumber} falló: ${statusCode} - ${errorMessage}`);
 
                 // Si es TOKEN_IP_MISMATCHED, intentar con el siguiente token de IP
-                if (statusCode === 401 && errorMessage.includes('TOKEN_IP_MISMATCHED') && i < BRICKLINK_CREDENTIALS.length - 1) {
+                if (statusCode === 401 && errorMessage.includes('TOKEN_IP_MISMATCHED')) {
+                    // Si este es el último token y hay más potentialSetNumbers, entonces el `break` debería salir del bucle interno
+                    if (i === BRICKLINK_CREDENTIALS.length - 1 && potentialSetNumbers.indexOf(currentSetNumber) < potentialSetNumbers.length - 1) {
+                        break; // Salir del bucle de IPs e intentar el siguiente formato de setNumber
+                    }
                     continue; // Pasa al siguiente par de credenciales de IP
                 }
 
-                // Si es PARAMETER_MISSING_OR_INVALID o 404 Not Found, y no es el último intento de setNumber,
-                // salimos de este bucle de IP y pasamos al siguiente potentialSetNumber.
+                // Si el error es un "parámetro inválido" o "no encontrado" y no es el último formato de setNumber,
+                // salimos del bucle de credenciales de IP y probamos el siguiente formato de setNumber.
                 if ((statusCode === 400 && errorMessage.includes('PARAMETER_MISSING_OR_INVALID')) || statusCode === 404) {
-                    break; // Salir del bucle de credenciales de IP y probar el siguiente formato de setNumber
+                    // Solo intentar el siguiente setNumber si no estamos en el último
+                    if (potentialSetNumbers.indexOf(currentSetNumber) < potentialSetNumbers.length - 1) {
+                         break; // Salir del bucle de IPs y pasar al siguiente formato de setNumber
+                    }
                 }
                 
                 // Si llegamos aquí, es un error que no podemos recuperar, o el último intento falló.
                 // Re-lanzar el error para que el server.js lo maneje.
-                const bricklinkError = new Error(errorMessage || "Error al obtener información de BrickLink.");
+                const bricklinkError = new Error(errorMessage || `Error al obtener información de BrickLink para ${currentSetNumber}.`);
                 bricklinkError.statusCode = statusCode;
                 bricklinkError.bricklinkDetails = error.response?.data;
                 throw bricklinkError;
@@ -183,12 +190,11 @@ export async function getSetInfo(rawSetNumber) {
         }
     }
 
-    // Si todos los intentos fallan
-    const finalError = new Error("No se pudo encontrar el set en BrickLink con los formatos intentados.");
+    // Si todos los intentos fallan para todos los formatos y tokens, lanza un error 404 general
+    const finalError = new Error(`No se pudo encontrar el set "${rawSetNumber}" en BrickLink con los formatos intentados.`);
     finalError.statusCode = 404; // 404 si no se encuentra después de todos los intentos
     throw finalError;
 }
-
 // Función para obtener la información del set
 /*export async function getSetInfo(setNumber) {
     const url = `https://api.bricklink.com/api/store/v1/items/SET/${setNumber}`;
