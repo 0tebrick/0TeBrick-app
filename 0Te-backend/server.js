@@ -9,14 +9,32 @@ import { getSetInfo } from './bricklinkApi.js';
 const app = express();
 const PORT = 4000;
 
+let allowedOrigins;
+
+if (process.env.CORS_ORIGIN){
+  allowedOrigins = process.env.CORS_ORIGIN.split(',');
+  } else {
+    allowedOrigins = [
+      'http://localhost:5173',
+    ];
+  }
+
 // Middleware
 app.use(cors({
- origin: 'http://localhost:5173', // Asegúrate de que esta URL sea la de tu frontend Vite
-  methods: ['GET', 'POST', 'DELETE'], // Añade DELETE si tu frontend lo usa
-  allowedHeaders: ['Content-Type'],
+ origin: function (origin, callback){
+  if (!origin) return callback(null, true);
+  if(allowedOrigins.indexOf(origin) === -1){
+    const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+    return callback(new Error(msg), false);
+  }
+  return callback(null, true);
+ },
+ methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+ allowedHeaders: ['Content-Type', 'Authorization'],
+ credentials: true
 }));
-app.use(express.json());
 
+app.use(express.json());
 // Abrir base de datos SQLite (archivo lego.db)
 const db = new sqlite3.Database("./lego.db", (err) => {
   if (err) {
