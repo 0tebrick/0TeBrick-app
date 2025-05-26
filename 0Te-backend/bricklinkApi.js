@@ -88,7 +88,7 @@ const BRICKLINK_CREDENTIALS = [
     tokenSecret: process.env.TOKEN_SECRET_3, // Secret para IP_3
   },
   // Agrega más si Render te da más de 3 IPs estáticas
-];
+].filter(cred => cred.token && cred.tokenSecret);
 
 // Crea la instancia de OAuth
 const oauth = OAuth({
@@ -102,19 +102,7 @@ const oauth = OAuth({
   },
 });
 
-// Función para obtener la información del set
-/*export async function getSetInfo(setNumber) {
-    const url = `https://api.bricklink.com/api/store/v1/items/SET/${setNumber}`;
-
-    for (let i = 0; i < BRICKLINK_CREDENTIALS.length; i++) {
-        const { token, tokenSecret } = BRICKLINK_CREDENTIALS[i];
-        const requestData = {
-            url: url,
-            method: 'GET',
-            data: null
-        };*/
-
-      export async function getSetInfo(rawSetNumber) {
+export async function getSetInfo(rawSetNumber) {
     // --- Lógica de intentos ---
     // Intentamos el número tal cual
     // Si falla y es un 404/PARAMETER_MISSING, intentamos con -1
@@ -146,6 +134,72 @@ const oauth = OAuth({
                 console.warn(`Saltando intento con credenciales incompletas para el intento de IP ${i+1}.`);
                 continue;
             }
+
+            const authorization = oauth.authorize(requestData, {
+                key: token,
+                secret: tokenSecret
+            });
+
+            try {
+                const response = await axios({
+                    method: requestData.method,
+                    url: requestData.url,
+                    headers: oauth.toHeader(authorization),
+                });
+
+                if (response.status === 200) {
+                    console.log("Bricklink API: Éxito con setNumber:", currentSetNumber);
+                    if (response.data && response.data.data) {
+                        return response.data.data; // Devuelve los datos si la respuesta es exitosa
+                    } else {
+                        console.warn("Bricklink API: Respuesta 200 pero sin 'data' esperada. Intentando el siguiente.");
+                        // No lanzamos error aquí, intentamos el siguiente token/setNumber
+                    }
+                }
+            } catch (error) {
+                const errorMessage = error.response?.data?.meta?.description || error.response?.data?.message || '';
+                const statusCode = error.response?.status;
+
+                console.error(`Intento ${i+1} con ${currentSetNumber} falló: ${statusCode} - ${errorMessage}`);
+
+                // Si es TOKEN_IP_MISMATCHED, intentar con el siguiente token de IP
+                if (statusCode === 401 && errorMessage.includes('TOKEN_IP_MISMATCHED') && i < BRICKLINK_CREDENTIALS.length - 1) {
+                    continue; // Pasa al siguiente par de credenciales de IP
+                }
+
+                // Si es PARAMETER_MISSING_OR_INVALID o 404 Not Found, y no es el último intento de setNumber,
+                // salimos de este bucle de IP y pasamos al siguiente potentialSetNumber.
+                if ((statusCode === 400 && errorMessage.includes('PARAMETER_MISSING_OR_INVALID')) || statusCode === 404) {
+                    break; // Salir del bucle de credenciales de IP y probar el siguiente formato de setNumber
+                }
+                
+                // Si llegamos aquí, es un error que no podemos recuperar, o el último intento falló.
+                // Re-lanzar el error para que el server.js lo maneje.
+                const bricklinkError = new Error(errorMessage || "Error al obtener información de BrickLink.");
+                bricklinkError.statusCode = statusCode;
+                bricklinkError.bricklinkDetails = error.response?.data;
+                throw bricklinkError;
+            }
+        }
+    }
+
+    // Si todos los intentos fallan
+    const finalError = new Error("No se pudo encontrar el set en BrickLink con los formatos intentados.");
+    finalError.statusCode = 404; // 404 si no se encuentra después de todos los intentos
+    throw finalError;
+}
+
+// Función para obtener la información del set
+/*export async function getSetInfo(setNumber) {
+    const url = `https://api.bricklink.com/api/store/v1/items/SET/${setNumber}`;
+
+    for (let i = 0; i < BRICKLINK_CREDENTIALS.length; i++) {
+        const { token, tokenSecret } = BRICKLINK_CREDENTIALS[i];
+        const requestData = {
+            url: url,
+            method: 'GET',
+            data: null
+        };
 
         const authorization = oauth.authorize(requestData, {
             key: token,
@@ -188,9 +242,9 @@ const oauth = OAuth({
             throw bricklinkError;
         }
     }
-  }
+
     // Si todos los intentos fallan
     const finalError = new Error("Todos los intentos para conectar con BrickLink fallaron. TOKEN_IP_MISMATCHED o error desconocido.");
     finalError.statusCode = 500;
     throw finalError;
-}
+}*/
