@@ -92,6 +92,9 @@ export default function SearchResults() {
       try {
         // This call remains the same, fetching from your backend
         const response = await fetch(`https://zerotebrick-backend.onrender.com/api/bricklink/set/${query}`);
+        console.log("DEBUG: Fetching URL:", response); // <--- ADD THIS LINE
+        console.log("DEBUG: Query value:", query);     // <--- ADD THIS LINE
+
 
         if (!response.ok) {
           const errorData = await response.json();
