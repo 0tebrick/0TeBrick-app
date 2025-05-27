@@ -29,14 +29,14 @@ export default function SearchBar({ initialQuery = "" }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-xl flex gap-4 justify-center mx-auto">
+    <form onSubmit={handleSubmit} className="w-full max-w-xl flex gap-4 justify-center mx-auto relative">
       <input
         ref={inputRef}
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Buscar por nombre o número..."
-        className="flex-grow px-6 py-3 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="flex-grow px-6 py-3 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 pr-10"
         autoComplete="off"
       />
       {/* Botón para limpiar la búsqueda (la "x") */}
