@@ -2,7 +2,7 @@
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
 import axios from 'axios';
-import { generatePotentialSetNumbers } from '..utils/utils.js';
+import { generatePotentialSetNumbers } from '.utils/utils.js';
 import 'dotenv/config'; // Para asegurar que dotenv.config() se ejecuta
 
 // Define las credenciales de Bricklink como un array de objetos
