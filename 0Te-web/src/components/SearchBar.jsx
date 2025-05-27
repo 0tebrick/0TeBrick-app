@@ -8,14 +8,17 @@ export default function SearchBar({ initialQuery = "" }) {
 
   // ⭐ Sincronizar query con initialQuery cada vez que cambie
   useEffect(() => {
-    setQuery(initialQuery);
-  }, [initialQuery]);
+    const isHome = location.pathname === "/";
+    const isDetail = /^\/detalle\/[^/]+$/.test(location.pathname);
+    if (isHome || isDetail) {
+      setQuery("");
+    }
+  }, [location.pathname]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (query.trim()) {
       navigate(`/resultados?q=${encodeURIComponent(query.trim())}`);
-      setQuery("");
     }
   };
 
