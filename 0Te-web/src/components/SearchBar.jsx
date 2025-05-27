@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 
 export default function SearchBar({ initialQuery = "" }) {
   const [query, setQuery] = useState(initialQuery);
@@ -13,7 +14,7 @@ export default function SearchBar({ initialQuery = "" }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-xl flex gap-4 justify-center">
+    <form onSubmit={handleSubmit} className="w-full max-w-xl flex gap-4 justify-center mx-auto">
   <input
     type="text"
     value={query}
@@ -23,9 +24,8 @@ export default function SearchBar({ initialQuery = "" }) {
   />
   <button
     type="submit"
-    className="bg-blue-500 text-white px-6 py-3 border border-gray-300 rounded-full hover:bg-blue-600 transition text-lg"
-  >
-    Buscar
+    className="bg-blue-500 text-white px-6 py-3 border border-gray-300 rounded-full hover:bg-blue-600 transition text-lg flex items-center justify-center">
+    <MagnifyingGlassIcon className="h-5 w-5"/>
   </button>
 </form>
 
