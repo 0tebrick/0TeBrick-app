@@ -37,7 +37,7 @@ export default function SearchBar({ initialQuery = "" }) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Buscar por nombre o número..."
-        className="flex-grow px-6 py-3 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 pr-10"
+        className="w-full px-6 py-3 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 pr-10"
         autoComplete="off"
       />
       {/* Botón para limpiar la búsqueda (la "x") */}
