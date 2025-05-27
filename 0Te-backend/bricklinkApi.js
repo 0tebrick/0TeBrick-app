@@ -56,7 +56,7 @@ export async function getSetInfo(rawSetNumber) {
     const currentSetNumber = potentialSetNumbers[currentSetNumberIndex];
     if (!currentSetNumber) continue;
 
-    console.log(`getSetInfo: Intentando buscar con número de set: "${currentSetNumber}"`);
+    //console.log(`getSetInfo: Intentando buscar con número de set: "${currentSetNumber}"`);
 
     const url = `https://api.bricklink.com/api/store/v1/items/SET/${currentSetNumber}`;
     const requestData = {
@@ -68,10 +68,10 @@ export async function getSetInfo(rawSetNumber) {
     for (let i = 0; i < BRICKLINK_CREDENTIALS.length; i++) {
       const { token, tokenSecret } = BRICKLINK_CREDENTIALS[i];
 
-      if (!token || !tokenSecret) {
+      /*if (!token || !tokenSecret) {
         console.warn(`Saltando intento con credenciales incompletas para IP #${i + 1}.`);
         continue;
-      }
+      }*/
 
       const authorization = oauth.authorize(requestData, {
         key: token,
@@ -85,18 +85,18 @@ export async function getSetInfo(rawSetNumber) {
           headers: oauth.toHeader(authorization),
         });
 
-        if (response.status === 200 && response.data && response.data.data) {
-          console.log("✅ BrickLink API: Éxito con setNumber:", currentSetNumber);
+        /*if (response.status === 200 && response.data && response.data.data) {
+          console.log("✅ BrickLink API: Éxito con setNumber:", currentSetNumber);*/
           return response.data.data;
-        } else {
+        /*} else {
           console.warn("⚠️ Respuesta 200 sin datos esperados para:", currentSetNumber);
           break;
-        }
+        }*/
       } catch (error) {
         const errorMessage = error.response?.data?.meta?.description || error.response?.data?.message || '';
         const statusCode = error.response?.status;
 
-        console.error(`❌ Intento ${i + 1} con ${currentSetNumber} falló: ${statusCode} - ${errorMessage}`);
+        //console.error(`❌ Intento ${i + 1} con ${currentSetNumber} falló: ${statusCode} - ${errorMessage}`);
 
         if (statusCode === 401 && errorMessage.includes('TOKEN_IP_MISMATCHED')) {
           if (i === BRICKLINK_CREDENTIALS.length - 1 && currentSetNumberIndex === potentialSetNumbers.length - 1) {
@@ -120,8 +120,8 @@ export async function getSetInfo(rawSetNumber) {
     }
   }
 
-  console.warn(`❌ Todos los intentos fallaron para el set "${rawSetNumber}".`);
-  const finalError = new Error(`No se pudo encontrar el set "${rawSetNumber}" en BrickLink después de probar secuencias -1 a -5.`);
+//console.warn(`❌ Todos los intentos fallaron para el set "${rawSetNumber}".`);
+  const finalError = new Error(`No se pudo encontrar el set "${rawSetNumber}".`);
   finalError.statusCode = 404;
   throw finalError;
 }
