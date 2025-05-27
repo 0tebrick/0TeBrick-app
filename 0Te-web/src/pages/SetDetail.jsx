@@ -125,7 +125,7 @@ export default function SetDetail() {
         }
 
         const data = await response.json();
-        console.log("Datos de set recibidos en SetDetail:", data);
+        //console.log("Datos de set recibidos en SetDetail:", data);
 
         // Map BrickLink API data to the format needed for display and saving
         const mappedData = {
@@ -192,8 +192,8 @@ export default function SetDetail() {
         throw new Error(errorData.message || `Error al guardar el set: ${response.status} ${response.statusText}`);
       }
 
-      const savedSet = await response.json();
-      console.log('Set guardado exitosamente:', savedSet);
+      /*const savedSet = await response.json();
+      console.log('Set guardado exitosamente:', savedSet);*/
       setSaveStatus("¡Set guardado exitosamente!");
       // Optionally, redirect to the collection page
       // navigate('/coleccion');
