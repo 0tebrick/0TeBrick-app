@@ -178,25 +178,22 @@ app.get("/api/bricklink/set/:setNumber", async (req, res) => { // ¡Añadido /ap
     res.status(statusCode).json({ message, details });
   }
 });
-
-// Ruta de prueba para la raíz del backend
-app.get('/', (req, res) => {
-  res.send('Servidor Backend de 0TeBrick funcionando. Accede a las APIs en /api/...');
-});
-
-app.get('/api/bricklink/set/:setID/minifigs', async (req, res) => {
-  const { setID } = req.params;
+app.get("/api/bricklink/set/:setID/minifigs", async (req, res) => {
+  const setID = req.params.setID;
 
   try {
     const minifigs = await getSetMinifigs(setID);
     res.json({ minifigs });
   } catch (error) {
     const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({
-      message: error.message || 'Error al obtener minifiguras',
-      details: error.bricklinkDetails || null,
-    });
+    const message = error.message || "Error al obtener minifigs desde Bricklink";
+    res.status(statusCode).json({ message });
   }
+});
+
+// Ruta de prueba para la raíz del backend
+app.get('/', (req, res) => {
+  res.send('Servidor Backend de 0TeBrick funcionando. Accede a las APIs en /api/...');
 });
 
 // Iniciar servidor
