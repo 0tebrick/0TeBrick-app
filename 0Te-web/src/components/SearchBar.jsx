@@ -30,6 +30,7 @@ export default function SearchBar({ initialQuery = "" }) {
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-xl flex gap-4 justify-center mx-auto relative">
+      <div className="relative flex-grow">
       <input
         ref={inputRef}
         type="text"
@@ -44,12 +45,13 @@ export default function SearchBar({ initialQuery = "" }) {
         <button
           type="button" // Importante: type="button" para que no envíe el formulario
           onClick={handleClearSearch}
-          className="absolute right-[4.5rem] top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none p-1 rounded-full" // Ajusta right y otros estilos
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none p-1 rounded-full" // Ajusta right y otros estilos
           aria-label="Limpiar búsqueda"
         >
           <XMarkIcon className="h-5 w-5" /> {/* Usa el icono XMarkIcon */}
         </button>
       )}
+      </div>
 
       <button
         type="submit"
