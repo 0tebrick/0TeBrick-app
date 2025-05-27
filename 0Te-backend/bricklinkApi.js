@@ -2,6 +2,7 @@
 import OAuth from 'oauth-1.0a';
 import crypto from 'crypto';
 import axios from 'axios';
+import { generatePotentialSetNumbers } from './utils.js';
 import 'dotenv/config'; // Para asegurar que dotenv.config() se ejecuta
 
 // Define las credenciales de Bricklink como un array de objetos
@@ -48,9 +49,7 @@ export async function getSetMinifigs(setNumber) {
   const cleanSet = String(setNumber).trim();
 
   // Mismo esquema que getSetInfo, intentamos posibles formatos si no tiene secuencia
-  const potentialSetNumbers = cleanSet.includes('-')
-    ? [cleanSet]
-    : Array.from({ length: 5 }, (_, i) => `${cleanSet}-${i + 1}`);
+  const potentialSetNumbers = generatePotentialSetNumbers(setNumber);
 
   for (let currentSetNumberIndex = 0; currentSetNumberIndex < potentialSetNumbers.length; currentSetNumberIndex++) {
     const currentSetNumber = potentialSetNumbers[currentSetNumberIndex];
@@ -115,10 +114,7 @@ export async function getSetInfo(rawSetNumber) {
   const cleanSet = String(rawSetNumber).trim();
 
   // Generar los posibles formatos del set
-  const potentialSetNumbers = cleanSet.includes('-')
-    ? [cleanSet] // Si ya tiene secuencia, solo usamos eso
-    : Array.from({ length: 5 }, (_, i) => `${cleanSet}-${i + 1}`); // Probar 70335-1, 70335-2, ..., 70335-5
-
+  const potentialSetNumbers = generatePotentialSetNumbers(rawSetNumber)
   for (let currentSetNumberIndex = 0; currentSetNumberIndex < potentialSetNumbers.length; currentSetNumberIndex++) {
     const currentSetNumber = potentialSetNumbers[currentSetNumberIndex];
     if (!currentSetNumber) continue;
