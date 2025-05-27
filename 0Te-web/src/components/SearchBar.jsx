@@ -8,17 +8,14 @@ export default function SearchBar({ initialQuery = "" }) {
 
   // ⭐ Sincronizar query con initialQuery cada vez que cambie
   useEffect(() => {
-    const isHome = location.pathname === "/";
-    const isDetail = /^\/detalle\/[^/]+$/.test(location.pathname);
-    if (isHome || isDetail) {
-      setQuery("");
-    }
-  }, [location.pathname]);
+    setQuery(initialQuery);
+  }, [initialQuery]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (query.trim()) {
       navigate(`/resultados?q=${encodeURIComponent(query.trim())}`);
+      setQuery("")
     }
   };
 
@@ -30,6 +27,7 @@ export default function SearchBar({ initialQuery = "" }) {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Buscar por nombre o número..."
         className="flex-grow px-6 py-3 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        autoComplete="off"
       />
       <button
         type="submit"
