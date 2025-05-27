@@ -44,6 +44,73 @@ const oauth = OAuth({
 // En 0Te-backend/bricklinkApi.js
 // ... (resto de tu código hasta la función getSetInfo)
 
+export async function getSetMinifigs(setNumber) {
+  const cleanSet = String(setNumber).trim();
+
+  // Mismo esquema que getSetInfo, intentamos posibles formatos si no tiene secuencia
+  const potentialSetNumbers = cleanSet.includes('-')
+    ? [cleanSet]
+    : Array.from({ length: 5 }, (_, i) => `${cleanSet}-${i + 1}`);
+
+  for (let currentSetNumberIndex = 0; currentSetNumberIndex < potentialSetNumbers.length; currentSetNumberIndex++) {
+    const currentSetNumber = potentialSetNumbers[currentSetNumberIndex];
+    if (!currentSetNumber) continue;
+
+    const url = `https://api.bricklink.com/api/store/v1/items/SET/${currentSetNumber}/minifigs`;
+    const requestData = {
+      url,
+      method: 'GET',
+      data: null,
+    };
+
+    for (let i = 0; i < BRICKLINK_CREDENTIALS.length; i++) {
+      const { token, tokenSecret } = BRICKLINK_CREDENTIALS[i];
+
+      const authorization = oauth.authorize(requestData, {
+        key: token,
+        secret: tokenSecret,
+      });
+
+      try {
+        const response = await axios({
+          method: requestData.method,
+          url: requestData.url,
+          headers: oauth.toHeader(authorization),
+        });
+
+        return response.data.data;  // Aquí retornas la lista de minifigs
+      } catch (error) {
+        const errorMessage = error.response?.data?.meta?.description || error.response?.data?.message || '';
+        const statusCode = error.response?.status;
+
+        if (statusCode === 401 && errorMessage.includes('TOKEN_IP_MISMATCHED')) {
+          if (i === BRICKLINK_CREDENTIALS.length - 1 && currentSetNumberIndex === potentialSetNumbers.length - 1) {
+            const bricklinkError = new Error(errorMessage || `Error final: TOKEN_IP_MISMATCHED para ${currentSetNumber}.`);
+            bricklinkError.statusCode = statusCode;
+            bricklinkError.bricklinkDetails = error.response?.data;
+            throw bricklinkError;
+          }
+          continue;
+        }
+
+        if ((statusCode === 400 && errorMessage.includes('PARAMETER_MISSING_OR_INVALID')) || statusCode === 404) {
+          break;
+        }
+
+        const bricklinkError = new Error(errorMessage || `Error al obtener minifigs de BrickLink para ${currentSetNumber}.`);
+        bricklinkError.statusCode = statusCode;
+        bricklinkError.bricklinkDetails = error.response?.data;
+        throw bricklinkError;
+      }
+    }
+  }
+
+  const finalError = new Error(`No se pudo encontrar minifigs para el set "${setNumber}".`);
+  finalError.statusCode = 404;
+  throw finalError;
+}
+
+
 export async function getSetInfo(rawSetNumber) {
   const cleanSet = String(rawSetNumber).trim();
 
@@ -119,7 +186,6 @@ export async function getSetInfo(rawSetNumber) {
       }
     }
   }
-
 //console.warn(`❌ Todos los intentos fallaron para el set "${rawSetNumber}".`);
   const finalError = new Error(`No se pudo encontrar el set "${rawSetNumber}".`);
   finalError.statusCode = 404;

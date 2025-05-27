@@ -2,6 +2,7 @@ import express from "express";
 import sqlite3 from "sqlite3";
 import cors from "cors";
 import dotenv from "dotenv";
+import { getSetMinifigs } from './bricklinkApi.js';
 dotenv.config();
 
 import { getSetInfo } from './bricklinkApi.js';
@@ -183,6 +184,20 @@ app.get('/', (req, res) => {
   res.send('Servidor Backend de 0TeBrick funcionando. Accede a las APIs en /api/...');
 });
 
+app.get('/api/bricklink/set/:setID/minifigs', async (req, res) => {
+  const { setID } = req.params;
+
+  try {
+    const minifigs = await getSetMinifigs(setID);
+    res.json({ minifigs });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
+      message: error.message || 'Error al obtener minifiguras',
+      details: error.bricklinkDetails || null,
+    });
+  }
+});
 
 // Iniciar servidor
 app.listen(PORT, () => {
